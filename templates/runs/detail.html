@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}Run #{{ run.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Run #{{ run.id }}</h1>
+        <p class="muted">{{ run.mode }}{% if campaign %} - {{ campaign.name }}{% endif %}</p>
+    </div>
+    <a class="button button-secondary" href="/runs">Back to Runs</a>
+</div>
+
+<div id="run-status"
+     hx-get="/runs/{{ run.id }}/status"
+     hx-trigger="load, every 5s"
+     hx-swap="innerHTML">
+    {% include "runs/_status.html" %}
+</div>
+{% endblock %}

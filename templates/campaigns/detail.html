@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+{% block title %}{{ campaign.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>{{ campaign.name }}</h1>
+        <p class="muted">{{ campaign.niche }} - target {{ campaign.target_mobile_leads }} mobile leads</p>
+    </div>
+</div>
+
+<div class="grid two">
+    <section class="card">
+        <h2>Run Actions</h2>
+        <p class="muted">Each action creates a run job. The worker layer executes the existing discovery, enrichment, and export services.</p>
+        <div class="actions">
+            {% for mode in ["discover-only", "enrich-only", "full-run", "export-only"] %}
+            <form method="post" action="/campaigns/{{ campaign.id }}/runs">
+                <input type="hidden" name="mode" value="{{ mode }}">
+                <button class="button" type="submit">{{ mode }}</button>
+            </form>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Campaign Meta</h2>
+        <div class="stack compact">
+            <div><strong>Niche:</strong> {{ campaign.niche }}</div>
+            <div><strong>Default mode:</strong> <span class="badge">{{ campaign.default_run_mode }}</span></div>
+            <div><strong>Profile ID:</strong> {{ campaign.setting_profile_id }}</div>
+            <div><strong>Database:</strong> <code>{{ campaign.database_path }}</code></div>
+            <div><strong>Output:</strong> <code>{{ campaign.output_dir }}</code></div>
+            {% if campaign.notes %}
+            <div><strong>Notes:</strong> {{ campaign.notes }}</div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<div class="grid two">
+    <section class="card">
+        <h2>Summary</h2>
+        <div class="stats-grid">
+            <div><strong>{{ summary.runs_count }}</strong><span>runs</span></div>
+            <div><strong>{{ summary.candidates_count }}</strong><span>candidates</span></div>
+            <div><strong>{{ summary.leads_count }}</strong><span>leads</span></div>
+            <div><strong>{{ summary.mobile_count }}</strong><span>mobile</span></div>
+            <div><strong>{{ summary.duplicates_count }}</strong><span>duplicates</span></div>
+            <div><strong>{{ summary.failed_count }}</strong><span>failed</span></div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Cities</h2>
+        <ul class="plain-list">
+            {% for city in cities %}
+            <li>{{ city.city }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+
+<section class="card">
+    <h2>Recent Runs</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Mode</th>
+                <th>Status</th>
+                <th>Started</th>
+                <th>Finished</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for run in recent_runs %}
+            <tr>
+                <td>#{{ run.id }}</td>
+                <td><span class="badge">{{ run.mode }}</span></td>
+                <td><span class="badge badge-status">{{ run.status }}</span></td>
+                <td>{{ run.started_at or "-" }}</td>
+                <td>{{ run.finished_at or "-" }}</td>
+                <td><a href="/runs/{{ run.id }}">Open</a></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No runs yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

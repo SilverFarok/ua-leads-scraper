@@ -1,0 +1,26 @@
+<div class="grid two">
+    <section class="card">
+        <h2>Status</h2>
+        <div class="actions">
+            <a class="button button-secondary" href="/runs/{{ run.id }}">Hard Refresh</a>
+        </div>
+        <div class="stats-grid">
+            <div><strong>{{ run.status }}</strong><span>state</span></div>
+            <div><strong>{{ format_duration(run.started_at, run.finished_at) }}</strong><span>duration</span></div>
+            <div><strong>{{ run.started_at or "-" }}</strong><span>started</span></div>
+            <div><strong>{{ run.finished_at or "-" }}</strong><span>finished</span></div>
+            <div><strong>{{ run.candidates_count }}</strong><span>candidates</span></div>
+            <div><strong>{{ run.leads_count }}</strong><span>leads</span></div>
+            <div><strong>{{ run.mobile_count }}</strong><span>mobile</span></div>
+            <div><strong>{{ run.duplicates_count }}</strong><span>duplicates</span></div>
+            <div><strong>{{ run.failed_count }}</strong><span>failed</span></div>
+        </div>
+        {% if run.error_message %}
+        <p class="error">{{ run.error_message }}</p>
+        {% endif %}
+    </section>
+    <section class="card">
+        <h2>Logs</h2>
+        <pre class="log-box">{{ run.logs_text or "No logs yet." }}</pre>
+    </section>
+</div>

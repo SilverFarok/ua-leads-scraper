@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block title %}Runs{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Runs</h1>
+        <p class="muted">Each row is a queued or completed worker job. Open a run to monitor counters and logs through HTMX polling.</p>
+    </div>
+</div>
+
+<section class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Campaign</th>
+                <th>Mode</th>
+                <th>Status</th>
+                <th>Started</th>
+                <th>Finished</th>
+                <th>Duration</th>
+                <th>Candidates</th>
+                <th>Leads</th>
+                <th>Mobile</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for run in runs %}
+            <tr>
+                <td>#{{ run.id }}</td>
+                <td>{{ run.campaign_id }}</td>
+                <td><span class="badge">{{ run.mode }}</span></td>
+                <td><span class="badge badge-status">{{ run.status }}</span></td>
+                <td>{{ run.started_at or "-" }}</td>
+                <td>{{ run.finished_at or "-" }}</td>
+                <td>{{ format_duration(run.started_at, run.finished_at) }}</td>
+                <td>{{ run.candidates_count }}</td>
+                <td>{{ run.leads_count }}</td>
+                <td>{{ run.mobile_count }}</td>
+                <td><a href="/runs/{{ run.id }}">Open</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="11">No runs yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

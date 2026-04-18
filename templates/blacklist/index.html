@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block title %}Blacklist{% endblock %}
+{% block content %}
+<div class="grid two">
+    <section class="card">
+        <h1>Domain Blacklist</h1>
+        <p class="muted">Blocked domains are injected into runtime settings and skipped by search and site scraping adapters.</p>
+        <table class="table">
+            <thead>
+                <tr><th>Domain</th><th>Reason</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.domain }}</td>
+                    <td>{{ item.reason or "-" }}</td>
+                    <td>
+                        <form method="post" action="/blacklist/{{ item.id }}/delete">
+                            <button class="button button-secondary" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3">No blocked domains.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>Add Domain</h2>
+        <form class="stack" method="post" action="/blacklist">
+            <label>Domain <input name="domain" placeholder="example.com" required></label>
+            <label>Reason <textarea name="reason" rows="4"></textarea></label>
+            <button class="button" type="submit">Add Domain</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

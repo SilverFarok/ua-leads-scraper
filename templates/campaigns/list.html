@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block title %}Campaigns{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Campaigns</h1>
+        <p class="muted">Create niche-driven runs, assign a profile, and keep each campaign isolated in its own SQLite/output folder.</p>
+    </div>
+    <a class="button" href="/campaigns/new">New Campaign</a>
+</div>
+
+<section class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Niche</th>
+                <th>Target Mobile</th>
+                <th>Default Mode</th>
+                <th>Database</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for campaign in campaigns %}
+            <tr>
+                <td>{{ campaign.name }}</td>
+                <td>{{ campaign.niche }}</td>
+                <td>{{ campaign.target_mobile_leads }}</td>
+                <td><span class="badge">{{ campaign.default_run_mode }}</span></td>
+                <td><code>{{ campaign.database_path }}</code></td>
+                <td><a href="/campaigns/{{ campaign.id }}">Open</a></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No campaigns yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

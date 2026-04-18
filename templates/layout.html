@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lead Dashboard{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="shell">
+        <aside class="sidebar">
+            <a class="brand" href="/campaigns">Lead Dashboard</a>
+            <p class="sidebar-copy">Local admin UI for discovery, enrichment, export, and job tracking.</p>
+            <nav class="nav">
+                <a href="/campaigns">Campaigns</a>
+                <a href="/campaigns/new">New Campaign</a>
+                <a href="/runs">Runs</a>
+                <a href="/settings/profiles">Setting Profiles</a>
+                <a href="/blacklist">Blacklist</a>
+            </nav>
+        </aside>
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

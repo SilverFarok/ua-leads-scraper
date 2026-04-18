@@ -1,0 +1,16 @@
+.venv/
+.idea/
+__pycache__/
+*.py[cod]
+
+.env
+
+logs/
+output/
+
+data/*.sqlite3
+data/campaigns/
+data/jobs/
+
+*.log
+*.xlsx

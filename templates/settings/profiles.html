@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block title %}Setting Profiles{% endblock %}
+{% block content %}
+<div class="grid two">
+    <section class="card">
+        <h1>Setting Profiles</h1>
+        <p class="muted">Profiles are copied into runtime settings for each job. They do not rewrite the shared core config file.</p>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Search</th>
+                    <th>Site Pages</th>
+                    <th>Workers</th>
+                    <th>Delay ms</th>
+                    <th>Timeout s</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr>
+                    <td>{{ profile.name }}</td>
+                    <td>{{ profile.max_search_results_per_query }}</td>
+                    <td>{{ profile.max_site_pages_per_company }}</td>
+                    <td>{{ profile.enrichment_workers }}</td>
+                    <td>{{ profile.request_delay_ms }}</td>
+                    <td>{{ profile.site_timeout_sec }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <section class="card">
+        <h2>New Profile</h2>
+        <form class="stack" method="post" action="/settings/profiles">
+            <label>Name <input name="name" placeholder="Fast discovery" required></label>
+            <label>MAX_SEARCH_RESULTS_PER_QUERY <input type="number" name="max_search_results_per_query" value="30"></label>
+            <label>MAX_SITE_PAGES_PER_COMPANY <input type="number" name="max_site_pages_per_company" value="3"></label>
+            <label>ENRICHMENT_WORKERS <input type="number" name="enrichment_workers" value="5"></label>
+            <label>REQUEST_DELAY_MS <input type="number" name="request_delay_ms" value="1500"></label>
+            <label>SITE_TIMEOUT_SEC <input type="number" name="site_timeout_sec" value="20"></label>
+            <button class="button" type="submit">Create Profile</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

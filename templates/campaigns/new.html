@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block title %}New Campaign{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>New Campaign</h1>
+        <p class="muted">The UI only stores metadata and queues jobs. Actual scraping still runs through the existing discovery, enrichment, and export services.</p>
+    </div>
+</div>
+
+<section class="card">
+    <form class="stack" method="post" action="/campaigns/new">
+        <label>Name <input type="text" name="name" placeholder="Dentistry Ukraine" required></label>
+        <label>Niche <input type="text" name="niche" placeholder="стоматологія" required></label>
+        <label>Target Mobile Leads <input type="number" name="target_mobile_leads" value="5000" min="0"></label>
+        <label>Default Run Mode
+            <select name="default_run_mode">
+                <option value="full-run">full-run</option>
+                <option value="discover-only">discover-only</option>
+                <option value="enrich-only">enrich-only</option>
+                <option value="export-only">export-only</option>
+            </select>
+        </label>
+        <label>Setting Profile
+            <select name="setting_profile_id">
+                {% for profile in profiles %}
+                <option value="{{ profile.id }}">{{ profile.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Cities (one per line)
+            <textarea name="cities_text" rows="12" placeholder="Київ&#10;Львів&#10;Одеса" required></textarea>
+        </label>
+        <label>Notes
+            <textarea name="notes" rows="4" placeholder="Optional campaign notes."></textarea>
+        </label>
+        <button class="button" type="submit">Create Campaign</button>
+    </form>
+</section>
+{% endblock %}
