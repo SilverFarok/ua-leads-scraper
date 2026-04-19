@@ -27,6 +27,11 @@ class AdminDatabase:
         )
         self._session_factory = sessionmaker(bind=self._engine, expire_on_commit=False, future=True)
 
+    @property
+    def database_path(self) -> Path:
+        """Return the admin SQLite file path."""
+        return self._database_path
+
     def init_db(self) -> None:
         """Create admin tables."""
         AdminBase.metadata.create_all(self._engine)

@@ -73,4 +73,17 @@ def build_router(templates: Jinja2Templates) -> APIRouter:
             {"request": request, "run": run, "format_duration": format_duration},
         )
 
+    @router.post("/runs/{run_id}/delete")
+    def delete_run(
+        run_id: int,
+        runs_repo: RunJobRepository = Depends(run_repository),
+    ) -> RedirectResponse:
+        run = runs_repo.get_run(run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail="Run not found.")
+        if run.status == "running":
+            raise HTTPException(status_code=409, detail="Running jobs cannot be deleted.")
+        runs_repo.delete_run(run_id)
+        return RedirectResponse(url="/runs", status_code=303)
+
     return router

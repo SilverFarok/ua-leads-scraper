@@ -85,3 +85,25 @@ class RunJobRepository:
             if record is None:
                 return
             record.logs_text = f"{record.logs_text}{message}\n"
+
+    def delete_run(self, run_id: int) -> RunJobRecord | None:
+        """Delete one run and return its last known record."""
+        with self._admin_db.session_scope() as session:
+            record = session.get(RunJobRecord, run_id)
+            if record is None:
+                return None
+            session.delete(record)
+            return record
+
+    def campaign_has_active_runs(self, campaign_id: int) -> bool:
+        """Return True when a campaign still has queued or running jobs."""
+        with self._admin_db.session_scope() as session:
+            return (
+                session.execute(
+                    select(RunJobRecord.id).where(
+                        RunJobRecord.campaign_id == campaign_id,
+                        RunJobRecord.status.in_(("queued", "running")),
+                    )
+                ).first()
+                is not None
+            )

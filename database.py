@@ -25,6 +25,10 @@ class Database:
         """Create SQLite schema."""
         Base.metadata.create_all(self._engine)
 
+    def dispose(self) -> None:
+        """Dispose pooled DB connections so SQLite files can be deleted safely."""
+        self._engine.dispose()
+
     @contextmanager
     def session_scope(self) -> Iterator[Session]:
         """Provide a transactional session scope."""

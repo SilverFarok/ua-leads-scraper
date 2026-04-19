@@ -8,7 +8,7 @@ import sys
 
 from config import get_settings
 from database import Database
-from exporters.excel_exporter import ExcelExporter
+from exporters.export_service import LeadExportService
 from services.discovery_service import DiscoveryService
 from services.enrichment_service import EnrichmentService
 from utils.logging_utils import configure_logging
@@ -36,14 +36,14 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def export_only(database: Database, exporter: ExcelExporter, logger: logging.Logger) -> int:
+def export_only(database: Database, exporter: LeadExportService, logger: logging.Logger) -> int:
     """Export current database contents without scraping."""
     leads = database.fetch_all_leads()
-    full_path, mobile_path = exporter.export(leads)
+    artifacts = exporter.export(leads)
     logger.info("Export-only mode complete.")
     logger.info("Records exported: %s", len(leads))
-    logger.info("full_results.xlsx: %s", full_path)
-    logger.info("mobile_only.xlsx: %s", mobile_path)
+    logger.info("full_results.xlsx: %s", artifacts.full_excel_path)
+    logger.info("mobile_only.xlsx: %s", artifacts.mobile_excel_path)
     return 0
 
 
@@ -56,15 +56,14 @@ def main(argv: list[str] | None = None) -> int:
 
     database = Database(settings)
     database.init_db()
-    exporter = ExcelExporter(settings)
-
-    if args.export_only:
-        return export_only(database=database, exporter=exporter, logger=logger)
-
-    discovery_service = DiscoveryService(settings=settings, database=database, logger=logger)
-    enrichment_service = EnrichmentService(settings=settings, database=database, logger=logger)
-
+    exporter = LeadExportService(settings, logger)
     try:
+        if args.export_only:
+            return export_only(database=database, exporter=exporter, logger=logger)
+
+        discovery_service = DiscoveryService(settings=settings, database=database, logger=logger)
+        enrichment_service = EnrichmentService(settings=settings, database=database, logger=logger)
+
         if args.discover_only:
             discovery_stats = discovery_service.run()
             logger.info("Discovery complete.")
@@ -78,7 +77,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.enrich_only:
             enrichment_stats = enrichment_service.run()
-            full_path, mobile_path = exporter.export(database.fetch_all_leads())
+            artifacts = exporter.export(database.fetch_all_leads())
             logger.info("Enrichment complete.")
             logger.info("Candidates processed: %s", enrichment_stats.candidates_processed)
             logger.info("Phones found: %s", enrichment_stats.phones_found)
@@ -86,13 +85,13 @@ def main(argv: list[str] | None = None) -> int:
             logger.info("Leads saved: %s", enrichment_stats.leads_saved)
             logger.info("Duplicates filtered: %s", enrichment_stats.duplicates_filtered)
             logger.info("Errors: %s", enrichment_stats.errors)
-            logger.info("full_results.xlsx: %s", full_path)
-            logger.info("mobile_only.xlsx: %s", mobile_path)
+            logger.info("full_results.xlsx: %s", artifacts.full_excel_path)
+            logger.info("mobile_only.xlsx: %s", artifacts.mobile_excel_path)
             return 0
 
         discovery_stats = discovery_service.run()
         enrichment_stats = enrichment_service.run()
-        full_path, mobile_path = exporter.export(database.fetch_all_leads())
+        artifacts = exporter.export(database.fetch_all_leads())
 
         logger.info("Run complete.")
         logger.info("Discovery queries processed: %s", discovery_stats.queries_processed)
@@ -106,12 +105,14 @@ def main(argv: list[str] | None = None) -> int:
         logger.info("Leads saved: %s", enrichment_stats.leads_saved)
         logger.info("Duplicates filtered: %s", enrichment_stats.duplicates_filtered)
         logger.info("Errors: %s", discovery_stats.errors + enrichment_stats.errors)
-        logger.info("full_results.xlsx: %s", full_path)
-        logger.info("mobile_only.xlsx: %s", mobile_path)
+        logger.info("full_results.xlsx: %s", artifacts.full_excel_path)
+        logger.info("mobile_only.xlsx: %s", artifacts.mobile_excel_path)
         return 0
     except Exception:
         logger.exception("Application failed.")
         return 1
+    finally:
+        database.dispose()
 
 
 if __name__ == "__main__":

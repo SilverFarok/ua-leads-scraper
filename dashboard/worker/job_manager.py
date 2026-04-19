@@ -2,33 +2,38 @@
 
 from __future__ import annotations
 
-import threading
+import subprocess
+import sys
 
 from config import Settings
 
 from dashboard.db.session import AdminDatabase
-from dashboard.worker.job_runner import execute_run_job
 
 
 class JobManager:
-    """Starts background threads for queued runs."""
+    """Starts background subprocesses for queued runs."""
 
     def __init__(self, admin_db: AdminDatabase, base_settings: Settings) -> None:
         self._admin_db = admin_db
         self._base_settings = base_settings
-        self._threads: dict[int, threading.Thread] = {}
+        self._processes: dict[int, subprocess.Popen[bytes]] = {}
 
     def start_run(self, run_id: int) -> None:
-        """Start a background thread for a run if it is not already active."""
-        existing = self._threads.get(run_id)
-        if existing is not None and existing.is_alive():
+        """Start a background subprocess for a run if it is not already active."""
+        existing = self._processes.get(run_id)
+        if existing is not None and existing.poll() is None:
             return
 
-        thread = threading.Thread(
-            target=execute_run_job,
-            args=(run_id, self._admin_db, self._base_settings),
-            daemon=True,
-            name=f"run-job-{run_id}",
+        command = [
+            sys.executable,
+            "-c",
+            (
+                "from dashboard.worker.job_runner import execute_run_job_subprocess; "
+                f"execute_run_job_subprocess({run_id}, {str(self._admin_db.database_path)!r})"
+            ),
+        ]
+        process = subprocess.Popen(
+            command,
+            cwd=str(self._base_settings.base_dir),
         )
-        self._threads[run_id] = thread
-        thread.start()
+        self._processes[run_id] = process

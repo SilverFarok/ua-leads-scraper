@@ -22,6 +22,16 @@ def _split_csv_env(value: str | None, default: list[str]) -> tuple[str, ...]:
     return tuple(item.strip() for item in value.split(",") if item.strip())
 
 
+def _resolve_optional_path(base_dir: Path, value: str | None) -> Path | None:
+    """Resolve an optional path-like environment variable against the project root."""
+    if not value:
+        return None
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        candidate = base_dir / candidate
+    return candidate
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     """Immutable application settings loaded from .env."""
@@ -42,6 +52,11 @@ class Settings:
     enrichment_workers: int
     target_mobile_leads: int
     blocked_domains: tuple[str, ...]
+    google_sheets_enabled: bool
+    google_sheets_credentials_path: Path | None
+    google_sheets_spreadsheet_id: str | None
+    google_sheets_worksheet_prefix: str
+    google_sheets_clear_before_write: bool
     playwright_headless: bool
     playwright_timeout_ms: int
     user_agent: str
@@ -112,6 +127,17 @@ def get_settings() -> Settings:
         enrichment_workers=max(int(os.getenv("ENRICHMENT_WORKERS", "5")), 1),
         target_mobile_leads=int(os.getenv("TARGET_MOBILE_LEADS", "0")),
         blocked_domains=_split_csv_env(os.getenv("BLOCKED_DOMAINS"), []),
+        google_sheets_enabled=_to_bool(os.getenv("GOOGLE_SHEETS_ENABLED", "false"), default=False),
+        google_sheets_credentials_path=_resolve_optional_path(
+            base_dir,
+            os.getenv("GOOGLE_SHEETS_CREDENTIALS_PATH"),
+        ),
+        google_sheets_spreadsheet_id=os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID"),
+        google_sheets_worksheet_prefix=os.getenv("GOOGLE_SHEETS_WORKSHEET_PREFIX", "results"),
+        google_sheets_clear_before_write=_to_bool(
+            os.getenv("GOOGLE_SHEETS_CLEAR_BEFORE_WRITE", "true"),
+            default=True,
+        ),
         playwright_headless=_to_bool(os.getenv("PLAYWRIGHT_HEADLESS", "true"), default=True),
         playwright_timeout_ms=int(os.getenv("PLAYWRIGHT_TIMEOUT_MS", "30000")),
         user_agent=os.getenv(

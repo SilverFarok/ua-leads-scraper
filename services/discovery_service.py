@@ -78,10 +78,14 @@ class DiscoveryService:
         try:
             with scraper as active_scraper:
                 yield active_scraper
-        except Exception:
+        except Exception as exc:
             self._logger.warning(
                 "Google Maps scraper is unavailable. Falling back to HTML search only. "
-                "Run 'python -m playwright install chromium' to enable Maps scraping."
+                "Root cause type=%s repr=%r. If this is a browser installation issue, run "
+                "'python -m playwright install chromium'.",
+                type(exc).__name__,
+                exc,
+                exc_info=True,
             )
             yield None
 

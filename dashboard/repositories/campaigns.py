@@ -103,3 +103,23 @@ class CampaignRepository:
             "duplicates_count": int(row[4]),
             "failed_count": int(row[5]),
         }
+
+    def delete_campaign(self, campaign_id: int) -> CampaignRecord | None:
+        """Delete a campaign together with its cities and run rows."""
+        with self._admin_db.session_scope() as session:
+            record = session.get(CampaignRecord, campaign_id)
+            if record is None:
+                return None
+
+            for run in session.execute(
+                select(RunJobRecord).where(RunJobRecord.campaign_id == campaign_id)
+            ).scalars():
+                session.delete(run)
+
+            for city in session.execute(
+                select(CampaignCityRecord).where(CampaignCityRecord.campaign_id == campaign_id)
+            ).scalars():
+                session.delete(city)
+
+            session.delete(record)
+            return record

@@ -10,7 +10,7 @@ from pathlib import Path
 
 from config import Settings
 from database import Database
-from exporters.excel_exporter import ExcelExporter
+from exporters.export_service import LeadExportService
 from services.discovery_service import DiscoveryService, DiscoveryStats
 from services.enrichment_service import EnrichmentService, EnrichmentStats
 
@@ -44,25 +44,27 @@ class PipelineAdapter:
         )
         database = Database(runtime_settings)
         database.init_db()
-        exporter = ExcelExporter(runtime_settings)
+        exporter = LeadExportService(runtime_settings, self._logger)
+        try:
+            if mode == "discover-only":
+                discovery_stats = DiscoveryService(runtime_settings, database, self._logger).run()
+                return self._collect_counts(database, discovery_stats=discovery_stats, enrichment_stats=None)
 
-        if mode == "discover-only":
+            if mode == "enrich-only":
+                enrichment_stats = EnrichmentService(runtime_settings, database, self._logger).run()
+                exporter.export(database.fetch_all_leads())
+                return self._collect_counts(database, discovery_stats=None, enrichment_stats=enrichment_stats)
+
+            if mode == "export-only":
+                exporter.export(database.fetch_all_leads())
+                return self._collect_counts(database, discovery_stats=None, enrichment_stats=None)
+
             discovery_stats = DiscoveryService(runtime_settings, database, self._logger).run()
-            return self._collect_counts(database, discovery_stats=discovery_stats, enrichment_stats=None)
-
-        if mode == "enrich-only":
             enrichment_stats = EnrichmentService(runtime_settings, database, self._logger).run()
             exporter.export(database.fetch_all_leads())
-            return self._collect_counts(database, discovery_stats=None, enrichment_stats=enrichment_stats)
-
-        if mode == "export-only":
-            exporter.export(database.fetch_all_leads())
-            return self._collect_counts(database, discovery_stats=None, enrichment_stats=None)
-
-        discovery_stats = DiscoveryService(runtime_settings, database, self._logger).run()
-        enrichment_stats = EnrichmentService(runtime_settings, database, self._logger).run()
-        exporter.export(database.fetch_all_leads())
-        return self._collect_counts(database, discovery_stats=discovery_stats, enrichment_stats=enrichment_stats)
+            return self._collect_counts(database, discovery_stats=discovery_stats, enrichment_stats=enrichment_stats)
+        finally:
+            database.dispose()
 
     def _build_runtime_settings(
         self,
@@ -91,6 +93,7 @@ class PipelineAdapter:
             enrichment_workers=profile.enrichment_workers,
             target_mobile_leads=campaign.target_mobile_leads,
             blocked_domains=blocked_domains,
+            google_sheets_worksheet_prefix=self._worksheet_prefix(campaign.name),
         )
 
     def _write_input_csv(self, *, run_id: int, niche: str, cities: list[str]) -> Path:
@@ -105,6 +108,12 @@ class PipelineAdapter:
             for city in cities:
                 writer.writerow([niche, city])
         return csv_path
+
+    @staticmethod
+    def _worksheet_prefix(campaign_name: str) -> str:
+        """Build a stable worksheet prefix per campaign."""
+        slug = re.sub(r"[^a-zA-Z0-9_\u0400-\u04FF-]+", "_", campaign_name).strip("_")
+        return slug[:80] or "campaign"
 
     def _collect_counts(
         self,

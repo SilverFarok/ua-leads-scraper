@@ -63,7 +63,9 @@ The dashboard does not scrape by itself. It only stores campaign metadata, creat
 |   |-- schema.sql
 |   `-- ...
 |-- exporters
-|   `-- excel_exporter.py
+|   |-- excel_exporter.py
+|   |-- export_service.py
+|   `-- google_sheets_exporter.py
 |-- scrapers
 |   |-- maps_scraper.py
 |   |-- search_scraper.py
@@ -101,6 +103,7 @@ The dashboard does not scrape by itself. It only stores campaign metadata, creat
 - classifies phones as `mobile`, `landline`, or `unknown`
 - deduplicates and stores results in SQLite
 - exports `full_results.xlsx` and `mobile_only.xlsx`
+- can optionally sync the same data into Google Sheets
 
 ## What the Dashboard Adds
 
@@ -150,7 +153,47 @@ ENRICHMENT_WORKERS=5
 REQUEST_DELAY_SEC=1.5
 REQUEST_TIMEOUT_SEC=20
 BLOCKED_DOMAINS=
+GOOGLE_SHEETS_ENABLED=false
+GOOGLE_SHEETS_CREDENTIALS_PATH=data/google-service-account.json
+GOOGLE_SHEETS_SPREADSHEET_ID=
+GOOGLE_SHEETS_WORKSHEET_PREFIX=results
+GOOGLE_SHEETS_CLEAR_BEFORE_WRITE=true
 ```
+
+## Google Sheets Export Setup
+
+The project now supports automatic Google Sheets export in both CLI runs and dashboard-triggered jobs.
+
+Configuration is service-account based:
+
+1. Create a Google Cloud project.
+2. Enable Google Sheets API for that project.
+3. Create a service account and download its JSON key.
+4. Save the key locally, for example:
+
+```text
+data/google-service-account.json
+```
+
+5. Create or choose a Google Spreadsheet.
+6. Share that spreadsheet with the service account email from the JSON key.
+7. Put the spreadsheet ID and credentials path into `.env`:
+
+```env
+GOOGLE_SHEETS_ENABLED=true
+GOOGLE_SHEETS_CREDENTIALS_PATH=data/google-service-account.json
+GOOGLE_SHEETS_SPREADSHEET_ID=your_spreadsheet_id_here
+GOOGLE_SHEETS_WORKSHEET_PREFIX=results
+GOOGLE_SHEETS_CLEAR_BEFORE_WRITE=true
+```
+
+Behavior:
+
+- CLI mode writes to worksheets:
+  - `results_full`
+  - `results_mobile`
+- Dashboard campaign runs override the worksheet prefix automatically per campaign name, so each campaign gets its own pair of worksheets.
+- Existing worksheets are reused and rewritten on every export.
 
 ## Running the Core CLI
 
@@ -209,7 +252,7 @@ Then open:
 7. `PipelineAdapter` builds runtime settings and calls the existing core services:
    - `DiscoveryService`
    - `EnrichmentService`
-   - `ExcelExporter`
+   - `LeadExportService`
 8. The worker updates `run_jobs` counters and appends logs into SQLite.
 9. `/runs/{id}` refreshes status and logs via HTMX polling.
 
@@ -233,6 +276,7 @@ Per campaign, the runtime adapter writes:
 
 - campaign-specific SQLite lead database
 - campaign-specific Excel exports under the campaign output folder
+- optional Google Sheets worksheets inside the configured spreadsheet
 
 The admin dashboard itself stores metadata in:
 

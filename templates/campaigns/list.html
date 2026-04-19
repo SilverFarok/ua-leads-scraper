@@ -18,7 +18,7 @@
                 <th>Target Mobile</th>
                 <th>Default Mode</th>
                 <th>Database</th>
-                <th></th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -29,7 +29,12 @@
                 <td>{{ campaign.target_mobile_leads }}</td>
                 <td><span class="badge">{{ campaign.default_run_mode }}</span></td>
                 <td><code>{{ campaign.database_path }}</code></td>
-                <td><a href="/campaigns/{{ campaign.id }}">Open</a></td>
+                <td class="table-actions">
+                    <a href="/campaigns/{{ campaign.id }}">Open</a>
+                    <form method="post" action="/campaigns/{{ campaign.id }}/delete" onsubmit="return confirm('Delete this campaign and all its files?');">
+                        <button class="button button-danger" type="submit">Delete</button>
+                    </form>
+                </td>
             </tr>
             {% else %}
             <tr>

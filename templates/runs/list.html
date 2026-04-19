@@ -22,7 +22,7 @@
                 <th>Candidates</th>
                 <th>Leads</th>
                 <th>Mobile</th>
-                <th></th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -38,7 +38,14 @@
                 <td>{{ run.candidates_count }}</td>
                 <td>{{ run.leads_count }}</td>
                 <td>{{ run.mobile_count }}</td>
-                <td><a href="/runs/{{ run.id }}">Open</a></td>
+                <td class="table-actions">
+                    <a href="/runs/{{ run.id }}">Open</a>
+                    {% if run.status != "running" %}
+                    <form method="post" action="/runs/{{ run.id }}/delete" onsubmit="return confirm('Delete this run?');">
+                        <button class="button button-danger" type="submit">Delete</button>
+                    </form>
+                    {% endif %}
+                </td>
             </tr>
             {% else %}
             <tr><td colspan="11">No runs yet.</td></tr>

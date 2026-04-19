@@ -1,26 +1,62 @@
-<div class="grid two">
+<div class="run-stack">
     <section class="card">
-        <h2>Status</h2>
-        <div class="actions">
-            <a class="button button-secondary" href="/runs/{{ run.id }}">Hard Refresh</a>
+        <div class="run-toolbar">
+            <div>
+                <h2>Status</h2>
+                <p class="muted">Live run counters and timestamps.</p>
+            </div>
+            <div class="actions">
+                <a class="button button-secondary" href="/runs/{{ run.id }}">Hard Refresh</a>
+            </div>
         </div>
-        <div class="stats-grid">
-            <div><strong>{{ run.status }}</strong><span>state</span></div>
-            <div><strong>{{ format_duration(run.started_at, run.finished_at) }}</strong><span>duration</span></div>
-            <div><strong>{{ run.started_at or "-" }}</strong><span>started</span></div>
-            <div><strong>{{ run.finished_at or "-" }}</strong><span>finished</span></div>
-            <div><strong>{{ run.candidates_count }}</strong><span>candidates</span></div>
-            <div><strong>{{ run.leads_count }}</strong><span>leads</span></div>
-            <div><strong>{{ run.mobile_count }}</strong><span>mobile</span></div>
-            <div><strong>{{ run.duplicates_count }}</strong><span>duplicates</span></div>
-            <div><strong>{{ run.failed_count }}</strong><span>failed</span></div>
+
+        <div class="run-hero">
+            <div class="run-hero-value">{{ run.status }}</div>
+            <div class="run-hero-meta">
+                <span class="badge badge-status">{{ run.mode }}</span>
+                <span class="muted">duration: {{ format_duration(run.started_at, run.finished_at) }}</span>
+            </div>
         </div>
+
+        <div class="run-fields">
+            <div class="run-field">
+                <div class="run-field-label">Started</div>
+                <div class="run-field-value">{{ run.started_at or "-" }}</div>
+            </div>
+            <div class="run-field">
+                <div class="run-field-label">Finished</div>
+                <div class="run-field-value">{{ run.finished_at or "-" }}</div>
+            </div>
+            <div class="run-field">
+                <div class="run-field-label">Candidates</div>
+                <div class="run-field-value">{{ run.candidates_count }}</div>
+            </div>
+            <div class="run-field">
+                <div class="run-field-label">Leads</div>
+                <div class="run-field-value">{{ run.leads_count }}</div>
+            </div>
+            <div class="run-field">
+                <div class="run-field-label">Mobile</div>
+                <div class="run-field-value">{{ run.mobile_count }}</div>
+            </div>
+            <div class="run-field">
+                <div class="run-field-label">Duplicates</div>
+                <div class="run-field-value">{{ run.duplicates_count }}</div>
+            </div>
+            <div class="run-field">
+                <div class="run-field-label">Failed</div>
+                <div class="run-field-value">{{ run.failed_count }}</div>
+            </div>
+        </div>
+
         {% if run.error_message %}
         <p class="error">{{ run.error_message }}</p>
         {% endif %}
     </section>
+
     <section class="card">
         <h2>Logs</h2>
+        <p class="muted">Worker output for this run.</p>
         <pre class="log-box">{{ run.logs_text or "No logs yet." }}</pre>
     </section>
 </div>

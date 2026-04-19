@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
-from config import Settings
+from config import Settings, get_settings
 
 from dashboard.db.session import AdminDatabase
 from dashboard.repositories.blacklist import DomainBlacklistRepository
@@ -26,6 +27,13 @@ class RunJobLogHandler(logging.Handler):
         """Append one formatted log line."""
         message = self.format(record)
         self._run_repository.append_log(self._run_id, message)
+
+
+def execute_run_job_subprocess(run_id: int, admin_db_path: str) -> None:
+    """Entry point for running one job in a dedicated Python subprocess."""
+    settings = get_settings()
+    admin_db = AdminDatabase(Path(admin_db_path))
+    execute_run_job(run_id, admin_db, settings)
 
 
 def execute_run_job(run_id: int, admin_db: AdminDatabase, base_settings: Settings) -> None:

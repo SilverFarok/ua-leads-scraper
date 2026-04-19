@@ -6,6 +6,9 @@
         <h1>{{ campaign.name }}</h1>
         <p class="muted">{{ campaign.niche }} - target {{ campaign.target_mobile_leads }} mobile leads</p>
     </div>
+    <form method="post" action="/campaigns/{{ campaign.id }}/delete" onsubmit="return confirm('Delete this campaign and all its files?');">
+        <button class="button button-danger" type="submit">Delete Campaign</button>
+    </form>
 </div>
 
 <div class="grid two">

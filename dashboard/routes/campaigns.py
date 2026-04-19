@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import gc
 from pathlib import Path
+import shutil
+import time
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from config import Settings
+from dashboard.models import CampaignRecord
 from dashboard.repositories.campaigns import CampaignRepository
 from dashboard.repositories.runs import RunJobRepository
 from dashboard.repositories.settings_profiles import SettingProfileRepository
@@ -117,4 +122,80 @@ def build_router(templates: Jinja2Templates) -> APIRouter:
         run = runs_repo.create_run(campaign_id=campaign_id, mode=mode)
         return RedirectResponse(url=f"/runs/{run.id}/start", status_code=303)
 
+    @router.post("/campaigns/{campaign_id}/delete")
+    def delete_campaign(
+        request: Request,
+        campaign_id: int,
+        campaigns_repo: CampaignRepository = Depends(campaign_repository),
+        runs_repo: RunJobRepository = Depends(run_repository),
+    ) -> RedirectResponse:
+        campaign = campaigns_repo.get_campaign(campaign_id)
+        if campaign is None:
+            raise HTTPException(status_code=404, detail="Campaign not found.")
+        if runs_repo.campaign_has_active_runs(campaign_id):
+            raise HTTPException(status_code=409, detail="Campaign has active runs and cannot be deleted.")
+
+        _delete_campaign_files(request.app.state.base_settings, campaign)
+        campaigns_repo.delete_campaign(campaign_id)
+        return RedirectResponse(url="/campaigns", status_code=303)
+
     return router
+
+
+def _delete_campaign_files(base_settings: Settings, campaign: CampaignRecord) -> None:
+    """Delete campaign-owned SQLite and output paths when they are inside managed directories."""
+    database_path = Path(campaign.database_path)
+    output_dir = Path(campaign.output_dir)
+    campaigns_dir = base_settings.data_dir / "campaigns"
+
+    if _is_within_managed_root(database_path, campaigns_dir) and database_path.exists():
+        _unlink_with_retries(database_path)
+
+    if _is_within_managed_root(output_dir, base_settings.output_dir) and output_dir.exists():
+        shutil.rmtree(output_dir, ignore_errors=True)
+
+    if _is_within_managed_root(database_path, campaigns_dir):
+        _remove_empty_parent_chain(database_path.parent, campaigns_dir)
+    if _is_within_managed_root(output_dir, base_settings.output_dir):
+        _remove_empty_parent_chain(output_dir, base_settings.output_dir)
+
+
+def _is_within_managed_root(path: Path, root: Path) -> bool:
+    """Return True when path is located under the expected managed root."""
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _remove_empty_parent_chain(path: Path, stop_at: Path) -> None:
+    """Remove empty directories until the managed root is reached."""
+    current = path
+    stop_at = stop_at.resolve()
+    while current.exists() and current.resolve() != stop_at:
+        try:
+            current.rmdir()
+        except OSError:
+            break
+        current = current.parent
+
+
+def _unlink_with_retries(path: Path, attempts: int = 5, delay_sec: float = 0.2) -> None:
+    """Retry unlinking a SQLite file because Windows can keep a connection handle briefly alive."""
+    last_error: PermissionError | None = None
+    for _ in range(attempts):
+        try:
+            path.unlink()
+            return
+        except FileNotFoundError:
+            return
+        except PermissionError as exc:
+            last_error = exc
+            gc.collect()
+            time.sleep(delay_sec)
+    if last_error is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Campaign database file is locked and could not be deleted: {path}",
+        ) from last_error

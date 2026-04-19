@@ -36,14 +36,23 @@ class ExcelExporter:
         """Export all leads and a mobile-only subset."""
         full_path = self._settings.output_dir / "full_results.xlsx"
         mobile_path = self._settings.output_dir / "mobile_only.xlsx"
+        dataframe = self.build_dataframe(leads)
+        mobile_dataframe = dataframe[dataframe["phone_type"] == "mobile"].copy()
 
-        records = [self._serialize_lead(lead) for lead in leads]
+        dataframe.to_excel(full_path, index=False)
+        mobile_dataframe.to_excel(mobile_path, index=False)
+        return full_path, mobile_path
+
+    @classmethod
+    def build_dataframe(cls, leads: list[BusinessLead]) -> pd.DataFrame:
+        """Build a normalized DataFrame shared by all tabular exporters."""
+        records = [cls._serialize_lead(lead) for lead in leads]
         dataframe = pd.DataFrame(records)
 
         if dataframe.empty:
-            dataframe = pd.DataFrame(columns=self.EXPORT_COLUMNS)
+            dataframe = pd.DataFrame(columns=cls.EXPORT_COLUMNS)
         else:
-            dataframe = dataframe.reindex(columns=self.EXPORT_COLUMNS)
+            dataframe = dataframe.reindex(columns=cls.EXPORT_COLUMNS)
 
         dataframe.sort_values(
             by=["query_city", "company_name", "phone_normalized"],
@@ -51,14 +60,10 @@ class ExcelExporter:
             inplace=True,
             na_position="last",
         )
+        return dataframe
 
-        mobile_dataframe = dataframe[dataframe["phone_type"] == "mobile"].copy()
-
-        dataframe.to_excel(full_path, index=False)
-        mobile_dataframe.to_excel(mobile_path, index=False)
-        return full_path, mobile_path
-
-    def _serialize_lead(self, lead: BusinessLead) -> dict[str, object]:
+    @staticmethod
+    def _serialize_lead(lead: BusinessLead) -> dict[str, object]:
         """Convert a lead to an Excel-safe record."""
         record = asdict(lead)
         created_at = record.get("created_at")
